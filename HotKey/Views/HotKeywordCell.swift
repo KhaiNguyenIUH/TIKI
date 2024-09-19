@@ -2,6 +2,7 @@ import UIKit
 
 public class HotKeywordCell: UICollectionViewCell {
     static let identifier = "HotKeywordCell"
+    private var taskIdentifier: UUID?
     
     private let keywordImageView: UIImageView = {
         let imageView = UIImageView()
@@ -66,62 +67,52 @@ public class HotKeywordCell: UICollectionViewCell {
     func configure(with keyword: HotKeyword, backgroundColor: UIColor) {
         keywordLabel.text = keyword.name
         keywordBackgroundView.backgroundColor = backgroundColor
-        loadImage(from: keyword.icon)
+        loadImage(from: keyword.icon, taskId: UUID())
     }
     
-    private func loadImage(from urlString: String) {
-        // Check cache
+    private func loadImage(from urlString: String, taskId: UUID) {
+        keywordImageView.image = UIImage(named: "imgPlaceholder")
+        
         if let cachedImage = ImageCache.shared.object(forKey: urlString as NSString) {
-            self.keywordImageView.image = cachedImage
+            keywordImageView.image = cachedImage
             return
         }
         
         guard let url = URL(string: urlString) else {
             Logger().log("URL is invalid: \(urlString)")
-            self.keywordImageView.image = UIImage(named: "imgPlaceholder")
             return
         }
         
-//        DispatchQueue.global(qos: .background).async {
-//            if let imageUrl = URL(string: urlString), let data = try? Data(contentsOf: imageUrl), let image = UIImage(data: data) {
-//                DispatchQueue.main.async {
-//                    self.keywordImageView.image = image
-//                    ImageCache.shared.setObject(image, forKey: urlString as NSString)
-//                }
-//            }
-//        }
-        
         URLSession.shared.dataTask(with: url) { [weak self] data, response, error in
+            guard let self = self else { return }
+            
             if let error = error {
                 Logger().log("Error downloading image: \(error.localizedDescription)")
-                Task {@MainActor in
-                    self?.keywordImageView.image = UIImage(named: "imgPlaceholder")
+                Task { @MainActor in
+                    if self.taskIdentifier == taskId {
+                        self.keywordImageView.image = UIImage(named: "imgPlaceholder")
+                    }
                 }
                 return
             }
-
-            if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode != 200 {
-                Logger().log("Invalid HTTP response: \(httpResponse.statusCode)")
-                Task {@MainActor in
-                    self?.keywordImageView.image = UIImage(named: "imgPlaceholder")
-                }
-                return
-            }
-
+            
             guard let data = data, let image = UIImage(data: data) else {
-                Logger().log("Cant create UIImage from data")
-                Task {@MainActor in
-                    self?.keywordImageView.image = UIImage(named: "imgPlaceholder")
+                Logger().log("Cannot create UIImage from data")
+                Task { @MainActor in
+                    if self.taskIdentifier == taskId {
+                        self.keywordImageView.image = UIImage(named: "imgPlaceholder")
+                    }
                 }
                 return
             }
-
+            
             ImageCache.shared.setObject(image, forKey: urlString as NSString)
-
-            Task {@MainActor in
-                self?.keywordImageView.image = image
+            
+            Task { @MainActor in
+                if self.taskIdentifier == taskId {
+                    self.keywordImageView.image = image
+                }
             }
         }.resume()
     }
-
 }

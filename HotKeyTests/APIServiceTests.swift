@@ -14,8 +14,20 @@ class APIServiceTests: XCTestCase {
         let expectation = self.expectation(description: "Fetch Hot Keywords")
         
         APIService.shared.fetchHotKeywords { keywords in
-            XCTAssertNotNil(keywords, "Keywords không được nil")
-            XCTAssertGreaterThan(keywords?.count ?? 0, 0, "Số lượng keywords phải lớn hơn 0")
+            XCTAssertNotNil(keywords, "Keywords must not be nil")
+            XCTAssertGreaterThan(keywords?.count ?? 0, 0, "Keywords must not be empty")
+            expectation.fulfill()
+        }
+        
+        waitForExpectations(timeout: 5, handler: nil)
+    }
+    
+    func testFetchWithDI() {
+        let expectation = self.expectation(description: "Fetch Hot Keywords")
+        
+        APIService.init(baseURL: BaseURL.uat.rawValue()).fetchHotKeywords { keywords in
+            XCTAssertNotNil(keywords, "Keywords must not be nil")
+            XCTAssertGreaterThan(keywords?.count ?? 0, 0, "Keywords must not be empty")
             expectation.fulfill()
         }
         
@@ -48,7 +60,7 @@ class APIServiceTests: XCTestCase {
             XCTAssertEqual(response.data.items.count, 3)
             XCTAssertEqual(response.data.items.first?.name, "iPhone")
         } catch {
-            XCTFail("Parse JSON thất bại: \(error)")
+            XCTFail("Parse JSON failed: \(error)")
         }
     }
 }

@@ -4,10 +4,7 @@ import UIKit
 
 class HotKeywordsViewController: UIViewController {
     private var collectionView: UICollectionView!
-    private var allHotKeywords: [HotKeyword] = []
     private var displayedHotKeywords: [HotKeyword] = []
-    private let pageSize = 5
-    private var isLoadingMore = false
     
     private let backgroundColors = ["#16702e", "#005a51", "#996c00", "#5c0a6b", "#006d90", "#974e06", "#99272e", "#89221f", "#00345d"].map { UIColor(hexString: $0) }
     
@@ -43,33 +40,22 @@ class HotKeywordsViewController: UIViewController {
     }
     
     private func fetchHotKeywords() {
-        self.allHotKeywords = APIService.shared.generateMockData()
-        loadMoreData()
+        self.displayedHotKeywords = APIService.shared.generateMockData()
+        Task { @MainActor in
+            self.collectionView.reloadData()
+        }
+        
 //        APIService.shared.fetchHotKeywords { [weak self] keywords in
 //            guard let self = self, let keywords = keywords else {
 //                Logger().log("error fetching hot keywords")
 //                return
 //            }
-//            self.hotKeywords = keywords
+//            self.displayedHotKeywords = keywords
+//            
 //            Task { @MainActor in
 //                self.collectionView.reloadData()
 //            }
 //        }
-    }
-    
-    private func loadMoreData() {
-        guard !isLoadingMore else { return }
-        
-        isLoadingMore = true
-        let startIndex = displayedHotKeywords.count
-        let endIndex = min(startIndex + pageSize, allHotKeywords.count)
-        
-        displayedHotKeywords.append(contentsOf: allHotKeywords[startIndex..<endIndex])
-        
-        Task { @MainActor in
-            self.collectionView.reloadData()
-            self.isLoadingMore = false
-        }
     }
 }
 
@@ -94,21 +80,27 @@ extension HotKeywordsViewController: UICollectionViewDataSource, UICollectionVie
         let keyword = displayedHotKeywords[indexPath.item]
         let content = keyword.name
         
-        let label = UILabel()
-        label.font = UIFont.systemFont(ofSize: 14)
-        label.numberOfLines = 2
-        label.text = content
-        label.textAlignment = .center
-        label.lineBreakMode = .byWordWrapping
-        
+        let font = UIFont.systemFont(ofSize: 14)
         let maxWidth = collectionView.frame.width - 32
-        let size = label.sizeThatFits(CGSize(width: maxWidth, height: CGFloat.greatestFiniteMagnitude))
-        
-        let width = size.width
+
+        let size = calculateTextSize(text: content, font: font, maxWidth: maxWidth)
+
         let height: CGFloat = 160
-        let minWidth = max(width, 80)
-        
+        let minWidth = max(size.width, 80)
+
         return CGSize(width: min(minWidth, maxWidth), height: height)
+    }
+
+    private func calculateTextSize(text: String, font: UIFont, maxWidth: CGFloat) -> CGSize {
+        let constraintSize = CGSize(width: maxWidth, height: CGFloat.greatestFiniteMagnitude)
+        let attributes = [NSAttributedString.Key.font: font]
+        
+        let boundingBox = text.boundingRect(with: constraintSize,
+                                            options: .usesLineFragmentOrigin,
+                                            attributes: attributes,
+                                            context: nil)
+        
+        return CGSize(width: ceil(boundingBox.width), height: ceil(boundingBox.height))
     }
     
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
@@ -120,16 +112,6 @@ extension HotKeywordsViewController: UICollectionViewDataSource, UICollectionVie
                     cell.transform = CGAffineTransform.identity
                 }
             }
-        }
-    }
-    
-    func scrollViewDidScroll(_ scrollView: UIScrollView) {
-        let offsetX = scrollView.contentOffset.x
-        let contentWidth = scrollView.contentSize.width
-        let scrollWidth = scrollView.frame.size.width
-        
-        if offsetX > contentWidth - scrollWidth - 100 {
-            loadMoreData()
         }
     }
 }

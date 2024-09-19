@@ -87,7 +87,6 @@ class APIService {
         return BaseURL.from(self.baseURL)
     }
     
-    // Ví dụ: Phương thức fetch Hot Keywords (dùng được với cả Singleton và Dependency Injection)
     func fetchHotKeywords(completion: @escaping ([HotKeyword]?) -> Void) {
         request(endpoint: APIEndpoint.hotKeywords.rawValue, responseType: HotKeywordResponse.self) { result in
             switch result {

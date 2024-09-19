@@ -4,7 +4,6 @@ extension APIService {
     func generateMockData() -> [HotKeyword] {
         var mockItems = [HotKeyword]()
         
-        // Dữ liệu cơ bản để sử dụng cho mock data
         let baseIcons = [
             "https://salt.tikicdn.com/cache/750x750/ts/product/fa/1d/33/98a0ed962d4b27b6526a93fac7aab192.png",
             "https://salt.tikicdn.com/cache/750x750/ts/product/65/c2/29/b5f8f3fe5e04758a05cf00cea66b4aa8.png",
@@ -29,7 +28,6 @@ extension APIService {
             "Mẹ và bé"
         ]
         
-        // Tạo 100 mục giả lập
         for i in 1...100 {
             let randomIndex = Int.random(in: 0..<baseNames.count)
             let mockItem = HotKeyword(

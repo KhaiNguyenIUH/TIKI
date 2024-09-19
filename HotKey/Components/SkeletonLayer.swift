@@ -15,7 +15,7 @@ class SkeletonLayer: UIView {
     }
     
     private func setupSkeletonLayer() {
-        backgroundColor = UIColor.lightGray.withAlphaComponent(0.5) // màu xám nhạt
+        backgroundColor = UIColor.lightGray.withAlphaComponent(0.5)
         
         gradientLayer = CAGradientLayer()
         gradientLayer.startPoint = CGPoint(x: 0, y: 0.5)
